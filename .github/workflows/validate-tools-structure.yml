@@ -1,0 +1,32 @@
+name: Validate Tools Structure
+
+on:
+  pull_request:
+    paths:
+      - "tools/**"
+      - "scripts/validate-tools.js"
+      - ".github/workflows/validate-tools-structure.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "tools/**"
+      - "scripts/validate-tools.js"
+      - ".github/workflows/validate-tools-structure.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate tools structure
+        run: node scripts/validate-tools.js

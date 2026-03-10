@@ -3,6 +3,12 @@
     "category": "图像处理",
     "items": [
       {
+        "name": "图片批量压缩工具",
+        "icon": "🗜️",
+        "desc": "批量压缩图片并打包下载，支持质量调节与压缩率预览。",
+        "path": "tools/图像处理/image-compressor/index.html"
+      },
+      {
         "name": "图片尺寸调整工具",
         "icon": "🖼️",
         "desc": "在线调整图片尺寸，支持等比例缩放，无需上传服务器",
@@ -24,6 +30,40 @@
         "icon": "🔍",
         "desc": "在线调试和测试正则表达式，实时高亮匹配结果",
         "path": "tools/开发工具/regex-tester/index.html"
+      }
+    ]
+  },
+  {
+    "category": "文档处理",
+    "items": [
+      {
+        "name": "图片转A4 PDF工具 (修复拖拽版)",
+        "icon": "🧾",
+        "desc": "将多张图片拖拽排序后导出为 A4 PDF，支持旋转、删除和预览。",
+        "path": "tools/文档处理/image-to-pdf/index.html"
+      },
+      {
+        "name": "纯前端 PDF 实时水印工具 (高清版)",
+        "icon": "📄",
+        "desc": "为 PDF 添加可调文字水印，支持实时预览与导出。",
+        "path": "tools/文档处理/pdf-maker/index.html"
+      }
+    ]
+  },
+  {
+    "category": "视频处理",
+    "items": [
+      {
+        "name": "安卓动态图片转 MP4 提取器",
+        "icon": "🎞️",
+        "desc": "从安卓动态图片 JPG 中提取内嵌 MP4 视频，支持拖拽上传和下载。",
+        "path": "tools/视频处理/live2video/index.html"
+      },
+      {
+        "name": "视频转GIF工具",
+        "icon": "🎬",
+        "desc": "上传视频并导出 GIF，支持设置时长、帧率、尺寸和质量。",
+        "path": "tools/视频处理/video2gif/index.html"
       }
     ]
   }

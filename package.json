@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "generate": "node generate-json.js",
-    "serve": "npx serve ."
+    "serve": "npx serve .",
+    "validate:tools": "node scripts/validate-tools.js"
   },
   "engines": {
     "node": ">=14.0.0"
