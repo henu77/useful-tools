@@ -47,6 +47,12 @@
         "icon": "📄",
         "desc": "为 PDF 添加可调文字水印，支持实时预览与导出。",
         "path": "tools/文档处理/pdf-maker/index.html"
+      },
+      {
+        "name": "PDF 合并工具",
+        "icon": "📚",
+        "desc": "纯前端合并多个 PDF 文件，支持拖拽排序后导出。",
+        "path": "tools/文档处理/pdf-merge/index.html"
       }
     ]
   },
