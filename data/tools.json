@@ -1,0 +1,30 @@
+[
+  {
+    "category": "图像处理",
+    "items": [
+      {
+        "name": "图片尺寸调整工具",
+        "icon": "🖼️",
+        "desc": "在线调整图片尺寸，支持等比例缩放，无需上传服务器",
+        "path": "tools/图像处理/image-resizer/index.html"
+      }
+    ]
+  },
+  {
+    "category": "开发工具",
+    "items": [
+      {
+        "name": "JSON 格式化工具",
+        "icon": "📋",
+        "desc": "在线 JSON 格式化、压缩与校验工具",
+        "path": "tools/开发工具/json-formatter/index.html"
+      },
+      {
+        "name": "正则表达式测试器",
+        "icon": "🔍",
+        "desc": "在线调试和测试正则表达式，实时高亮匹配结果",
+        "path": "tools/开发工具/regex-tester/index.html"
+      }
+    ]
+  }
+]

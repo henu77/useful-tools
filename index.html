@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工具导航</title>
+  <link rel="stylesheet" href="assets/css/index.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">🛠 <span>工具</span>导航</div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-item active" data-category="all">
+      <span>📦</span>
+      <span>全部工具</span>
+      <span class="nav-count" id="countAll">-</span>
+    </div>
+  </nav>
+</aside>
+
+<div class="main">
+  <header class="header">
+    <span class="header-title" id="headerTitle">全部工具</span>
+    <div class="search-wrap">
+      <span class="search-icon">🔎</span>
+      <input type="text" id="searchInput" placeholder="搜索工具名称或描述…" autocomplete="off">
+    </div>
+    <span class="tools-count" id="toolsCount"></span>
+  </header>
+  <div class="content" id="content">
+    <div class="state-msg">
+      <div class="state-icon">⏳</div>
+      <p>正在加载工具列表…</p>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/index.js"></script>
+
+</body>
+</html>

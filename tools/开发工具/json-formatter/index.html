@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON 格式化工具</title>
+  <meta name="description" content="在线 JSON 格式化、压缩与校验工具">
+  <meta name="icon" content="📋">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent:  #4f6ef7;
+      --bg:      #f5f6fa;
+      --panel:   #ffffff;
+      --text:    #2d3748;
+      --muted:   #718096;
+      --border:  #e2e8f0;
+      --success: #38a169;
+      --error:   #e53e3e;
+      --radius:  10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                   'Microsoft YaHei', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── 顶栏 ─────────────────────────────────── */
+    .topbar {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .back-btn {
+      font-size: .82rem;
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .back-btn:hover { text-decoration: underline; }
+    .topbar-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .topbar-icon { font-size: 1.3rem; }
+
+    /* ── 主体 ─────────────────────────────────── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      gap: 16px;
+    }
+
+    /* 工具栏 */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 7px;
+      font-size: .88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: .88; }
+    .btn-default {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-default:hover { background: var(--bg); }
+    .btn-danger { background: #fff0f0; color: var(--error); border: 1px solid #fed7d7; }
+    .btn-danger:hover { background: #fff5f5; }
+
+    /* 状态栏 */
+    .status-bar {
+      font-size: .82rem;
+      padding: 6px 12px;
+      border-radius: 6px;
+      display: none;
+    }
+    .status-bar.show { display: inline-block; }
+    .status-bar.ok  { background: #f0fff4; color: var(--success); border: 1px solid #c6f6d5; }
+    .status-bar.err { background: #fff5f5; color: var(--error);   border: 1px solid #fed7d7; }
+
+    /* 编辑器区域 */
+    .editor-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .pane {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .pane-label {
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .pane textarea, .pane .output {
+      flex: 1;
+      min-height: 460px;
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', monospace;
+      font-size: .85rem;
+      line-height: 1.6;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      color: var(--text);
+      resize: vertical;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .pane textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,110,247,.1);
+    }
+    .pane .output {
+      overflow: auto;
+      white-space: pre;
+      word-break: break-all;
+      white-space: pre-wrap;
+      user-select: text;
+    }
+    .output.has-error { border-color: var(--error); color: var(--error); }
+
+    /* 缩进选择 */
+    .indent-select {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: .85rem;
+      background: var(--panel);
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      .editor-row { grid-template-columns: 1fr; }
+      .pane textarea, .pane .output { min-height: 260px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back-btn" href="../../..">← 返回导航</a>
+  <span style="color:var(--border)">|</span>
+  <span class="topbar-icon">📋</span>
+  <span class="topbar-title">JSON 格式化工具</span>
+</div>
+
+<div class="main">
+  <div class="toolbar">
+    <button class="btn btn-primary" id="btnFormat">格式化</button>
+    <button class="btn btn-default" id="btnMinify">压缩</button>
+    <button class="btn btn-default" id="btnValidate">校验</button>
+    <button class="btn btn-default" id="btnCopy">复制结果</button>
+    <button class="btn btn-danger"  id="btnClear">清空</button>
+    <label style="font-size:.85rem;color:var(--muted)">缩进：</label>
+    <select class="indent-select" id="indentSelect">
+      <option value="2">2 空格</option>
+      <option value="4">4 空格</option>
+      <option value="tab">Tab</option>
+    </select>
+    <span class="status-bar" id="statusBar"></span>
+  </div>
+
+  <div class="editor-row">
+    <div class="pane">
+      <div class="pane-label">输入 JSON</div>
+      <textarea id="input" placeholder='粘贴 JSON 内容，例如：{"name":"Alice","age":30}'
+                spellcheck="false"></textarea>
+    </div>
+    <div class="pane">
+      <div class="pane-label">输出结果</div>
+      <div class="output" id="output" tabindex="0"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const input       = document.getElementById('input');
+  const output      = document.getElementById('output');
+  const statusBar   = document.getElementById('statusBar');
+  const indentSel   = document.getElementById('indentSelect');
+
+  function getIndent() {
+    const v = indentSel.value;
+    return v === 'tab' ? '\t' : parseInt(v, 10);
+  }
+
+  function setStatus(msg, type) {
+    statusBar.textContent = msg;
+    statusBar.className   = 'status-bar show ' + type;
+  }
+
+  function clearStatus() {
+    statusBar.className = 'status-bar';
+  }
+
+  function parseInput() {
+    const raw = input.value.trim();
+    if (!raw) throw new Error('输入内容为空');
+    return JSON.parse(raw);
+  }
+
+  /* 格式化 */
+  document.getElementById('btnFormat').addEventListener('click', () => {
+    try {
+      const obj = parseInput();
+      const formatted = JSON.stringify(obj, null, getIndent());
+      output.textContent = formatted;
+      output.classList.remove('has-error');
+      setStatus('✅ 格式化成功', 'ok');
+    } catch (e) {
+      output.textContent = e.message;
+      output.classList.add('has-error');
+      setStatus('❌ ' + e.message, 'err');
+    }
+  });
+
+  /* 压缩 */
+  document.getElementById('btnMinify').addEventListener('click', () => {
+    try {
+      const obj = parseInput();
+      output.textContent = JSON.stringify(obj);
+      output.classList.remove('has-error');
+      setStatus('✅ 压缩成功', 'ok');
+    } catch (e) {
+      output.textContent = e.message;
+      output.classList.add('has-error');
+      setStatus('❌ ' + e.message, 'err');
+    }
+  });
+
+  /* 校验 */
+  document.getElementById('btnValidate').addEventListener('click', () => {
+    try {
+      parseInput();
+      output.classList.remove('has-error');
+      setStatus('✅ JSON 格式合法', 'ok');
+    } catch (e) {
+      output.classList.add('has-error');
+      setStatus('❌ ' + e.message, 'err');
+    }
+  });
+
+  /* 复制结果 */
+  document.getElementById('btnCopy').addEventListener('click', () => {
+    const text = output.textContent;
+    if (!text) { setStatus('⚠️ 结果为空', 'err'); return; }
+    navigator.clipboard.writeText(text)
+      .then(() => setStatus('✅ 已复制到剪贴板', 'ok'))
+      .catch(() => setStatus('❌ 复制失败，请手动选中复制', 'err'));
+  });
+
+  /* 清空 */
+  document.getElementById('btnClear').addEventListener('click', () => {
+    input.value = '';
+    output.textContent = '';
+    output.classList.remove('has-error');
+    clearStatus();
+    input.focus();
+  });
+
+  /* 输入时清除状态 */
+  input.addEventListener('input', clearStatus);
+
+  /* Ctrl+Enter 快捷格式化 */
+  input.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('btnFormat').click();
+    }
+  });
+})();
+</script>
+</body>
+</html>

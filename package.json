@@ -1,0 +1,13 @@
+{
+  "name": "useful-tools",
+  "version": "1.0.0",
+  "description": "纯前端静态工具导航网站",
+  "private": true,
+  "scripts": {
+    "generate": "node generate-json.js",
+    "serve": "npx serve ."
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
