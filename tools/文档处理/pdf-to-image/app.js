@@ -166,14 +166,21 @@
   }
 
   // 事件绑定
+  // dropArea 点击触发文件选择
   dropArea.addEventListener('click', () => fileInput.click());
 
-  fileInput.addEventListener('change', () => {
+  fileInput.addEventListener('change', (e) => {
     if (fileInput.files.length > 0) {
       loadPDF(fileInput.files[0]);
     }
     fileInput.value = '';
   });
+
+  // 阻止按钮点击事件冒泡到 dropArea，避免重复触发
+  const uploadBtn = document.querySelector('.btn-upload');
+  if (uploadBtn) {
+    uploadBtn.addEventListener('click', e => e.stopPropagation());
+  }
 
   ['dragenter', 'dragover'].forEach(type => {
     dropArea.addEventListener(type, e => {
