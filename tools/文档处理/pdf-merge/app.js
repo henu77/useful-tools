@@ -23,11 +23,37 @@
     return (bytes / 1024 / 1024).toFixed(2) + ' MB';
   }
 
+  // 渲染 PDF 第一页预览
+  async function renderPDFPreview(file, canvasEl) {
+    const ctx = canvasEl.getContext('2d');
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const page = await pdf.getPage(1);
+
+      const scale = 0.5;
+      const viewport = page.getViewport({ scale });
+
+      canvasEl.width = viewport.width;
+      canvasEl.height = viewport.height;
+
+      await page.render({
+        canvasContext: ctx,
+        viewport: viewport
+      }).promise;
+    } catch (err) {
+      console.error('预览渲染失败:', err);
+      canvasEl.parentElement.innerHTML = '<div class="no-preview">预览<br>失败</div>';
+    }
+  }
+
   function renderList() {
     fileListEl.innerHTML = '';
 
     if (files.length === 0) {
-      fileListEl.innerHTML = '<div class="empty">暂无文件</div>';
+      fileListEl.innerHTML = '<div class="empty">暂无文件，请添加 PDF 文件</div>';
       mergeBtn.disabled = true;
       clearBtn.disabled = true;
       return;
@@ -38,15 +64,29 @@
       row.className = 'item';
       row.draggable = true;
       row.dataset.index = String(idx);
+
       row.innerHTML = `
-        <div class="idx">${idx + 1}</div>
-        <div>
-          <div class="name" title="${f.file.name}">${f.file.name}</div>
+        <div class="preview-box">
+          <canvas id="preview-${idx}"></canvas>
+        </div>
+        <div class="file-info">
+          <div class="name" title="${f.file.name}">
+            <span class="idx">${idx + 1}</span>
+            ${f.file.name}
+          </div>
           <div class="meta">${formatSize(f.file.size)}</div>
         </div>
-        <button class="btn btn-danger" data-remove="${idx}" style="padding:6px 10px;font-size:.8rem;">删除</button>
+        <div class="actions">
+          <button class="btn btn-ghost" data-preview="${idx}" title="预览">👁️</button>
+          <button class="btn btn-danger" data-remove="${idx}" title="删除">删除</button>
+        </div>
       `;
 
+      // 渲染预览
+      const canvas = row.querySelector(`#preview-${idx}`);
+      renderPDFPreview(f.file, canvas);
+
+      // 拖拽事件
       row.addEventListener('dragstart', () => {
         dragIndex = idx;
         row.classList.add('dragging');
@@ -54,6 +94,7 @@
 
       row.addEventListener('dragend', () => {
         row.classList.remove('dragging');
+        document.querySelectorAll('.item').forEach(el => el.classList.remove('drag-over'));
         dragIndex = -1;
       });
 
@@ -61,8 +102,20 @@
         e.preventDefault();
       });
 
+      row.addEventListener('dragenter', e => {
+        e.preventDefault();
+        if (dragIndex !== idx) {
+          row.classList.add('drag-over');
+        }
+      });
+
+      row.addEventListener('dragleave', () => {
+        row.classList.remove('drag-over');
+      });
+
       row.addEventListener('drop', e => {
         e.preventDefault();
+        row.classList.remove('drag-over');
         const to = Number(row.dataset.index);
         if (dragIndex < 0 || dragIndex === to) return;
         const [moved] = files.splice(dragIndex, 1);
@@ -104,6 +157,50 @@
     }
   }
 
+  // 模态框预览
+  function openPreviewModal(idx) {
+    const f = files[idx];
+    if (!f) return;
+
+    let modal = document.getElementById('previewModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'previewModal';
+      modal.className = 'modal';
+      modal.innerHTML = '<img id="modalImg">';
+      modal.addEventListener('click', () => modal.classList.remove('active'));
+      document.body.appendChild(modal);
+    }
+
+    // 渲染大图
+    const img = document.getElementById('modalImg');
+    renderPDFPreviewLarge(f.file).then(dataUrl => {
+      img.src = dataUrl;
+      modal.classList.add('active');
+    });
+  }
+
+  async function renderPDFPreviewLarge(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1);
+
+    const scale = 1.5;
+    const viewport = page.getViewport({ scale });
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({
+      canvasContext: ctx,
+      viewport: viewport
+    }).promise;
+
+    return canvas.toDataURL('image/png');
+  }
+
   // 点击上传区域触发文件选择
   dropArea.addEventListener('click', () => fileInput.click());
   addBtn.addEventListener('click', () => fileInput.click());
@@ -135,14 +232,22 @@
     addFiles(e.dataTransfer.files || []);
   });
 
-  // 删除单个文件
+  // 列表点击事件（删除和预览）
   fileListEl.addEventListener('click', e => {
-    const btn = e.target.closest('[data-remove]');
-    if (!btn) return;
-    const idx = Number(btn.dataset.remove);
-    files.splice(idx, 1);
-    renderList();
-    setStatus(files.length ? '已移除文件' : '请先添加 PDF 文件', files.length ? 'ok' : '');
+    const removeBtn = e.target.closest('[data-remove]');
+    if (removeBtn) {
+      const idx = Number(removeBtn.dataset.remove);
+      files.splice(idx, 1);
+      renderList();
+      setStatus(files.length ? '已移除文件' : '请先添加 PDF 文件', files.length ? 'ok' : '');
+      return;
+    }
+
+    const previewBtn = e.target.closest('[data-preview]');
+    if (previewBtn) {
+      const idx = Number(previewBtn.dataset.preview);
+      openPreviewModal(idx);
+    }
   });
 
   // 清空列表

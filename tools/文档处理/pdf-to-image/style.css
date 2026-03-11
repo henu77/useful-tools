@@ -1,0 +1,258 @@
+:root {
+  --primary-color: #4a90e2;
+  --bg-color: #f0f2f5;
+  --card-bg: #ffffff;
+  --danger-color: #ff4d4f;
+  --success-color: #52c41a;
+  --muted: #718096;
+  --line: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  padding: 20px;
+  color: #333;
+  user-select: none;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 10px;
+  color: #2c3e50;
+}
+
+.hint {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 25px;
+}
+
+.controls {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-upload {
+  background-color: var(--primary-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-upload input {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.btn-export {
+  background-color: var(--success-color);
+}
+
+.btn-clear {
+  background-color: var(--danger-color);
+}
+
+.options {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.option-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.option-group label {
+  font-size: 14px;
+  color: #555;
+}
+
+.option-group select,
+.option-group input {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+#status {
+  text-align: center;
+  margin-bottom: 15px;
+  color: #888;
+  font-size: 14px;
+}
+
+.drop-area {
+  border: 3px dashed #d9d9d9;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  background-color: #fafafa;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 20px;
+}
+
+.drop-area:hover,
+.drop-area.dragover {
+  border-color: var(--primary-color);
+  background-color: #f0f7ff;
+}
+
+.drop-area p {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.preview-area {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+  min-height: 100px;
+}
+
+.preview-item {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.preview-item .canvas-wrapper {
+  width: 100%;
+  aspect-ratio: 210/297;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  overflow: hidden;
+}
+
+.preview-item canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.preview-item .page-info {
+  padding: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  background: #fafafa;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preview-item .page-info span {
+  font-weight: 500;
+  color: #333;
+}
+
+.preview-item .download-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.preview-item .download-btn:hover {
+  opacity: 0.9;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  color: var(--muted);
+}
+
+.loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 640px) {
+  body { padding: 14px; }
+  .container { padding: 20px; }
+  .preview-area { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}

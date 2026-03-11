@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF 转图片工具</title>
+  <meta name="description" content="将 PDF 每一页转换为图片，支持 PNG/JPEG 格式，可选择分辨率。">
+  <meta name="icon" content="🖼️">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <h1>PDF 转图片工具</h1>
+  <p class="hint">选择 PDF 文件，将每一页转换为图片，支持单独下载或批量导出。</p>
+
+  <div class="controls">
+    <button class="btn btn-upload">
+      <span>📂 选择 PDF</span>
+      <input type="file" id="fileInput" accept="application/pdf">
+    </button>
+    <button class="btn btn-clear" id="clearBtn">🗑️ 清空</button>
+    <button class="btn btn-export" id="exportAllBtn" disabled>📥 下载全部图片</button>
+  </div>
+
+  <div class="options">
+    <div class="option-group">
+      <label>输出格式：</label>
+      <select id="formatSelect">
+        <option value="png">PNG (无损)</option>
+        <option value="jpg">JPG (较小)</option>
+      </select>
+    </div>
+    <div class="option-group">
+      <label>分辨率：</label>
+      <select id="scaleSelect">
+        <option value="1">标准 (1x)</option>
+        <option value="1.5">高清 (1.5x)</option>
+        <option value="2" selected>高清 (2x)</option>
+        <option value="3">超清 (3x)</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="status">请选择 PDF 文件</div>
+
+  <div class="drop-area" id="dropArea">
+    <p>点击选择 PDF，或拖拽 PDF 到这里</p>
+  </div>
+
+  <div class="preview-area" id="previewArea"></div>
+</div>
+
+<script>
+  // 设置 PDF.js worker
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+<script src="app.js"></script>
+</body>
+</html>
