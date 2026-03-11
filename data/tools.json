@@ -37,13 +37,13 @@
     "category": "文档处理",
     "items": [
       {
-        "name": "图片转A4 PDF工具 (修复拖拽版)",
+        "name": "图片转A4 PDF工具",
         "icon": "🧾",
         "desc": "将多张图片拖拽排序后导出为 A4 PDF，支持旋转、删除和预览。",
         "path": "tools/文档处理/image-to-pdf/index.html"
       },
       {
-        "name": "纯前端 PDF 实时水印工具 (高清版)",
+        "name": "PDF 水印工具",
         "icon": "📄",
         "desc": "为 PDF 添加可调文字水印，支持实时预览与导出。",
         "path": "tools/文档处理/pdf-maker/index.html"
@@ -51,8 +51,14 @@
       {
         "name": "PDF 合并工具",
         "icon": "📚",
-        "desc": "纯前端合并多个 PDF 文件，支持拖拽排序后导出。",
+        "desc": "纯前端合并多个 PDF 文件，支持拖拽排序、预览第一页。",
         "path": "tools/文档处理/pdf-merge/index.html"
+      },
+      {
+        "name": "PDF 转图片工具",
+        "icon": "🖼️",
+        "desc": "将 PDF 每一页转换为图片，支持 PNG/JPEG 格式，可选择分辨率。",
+        "path": "tools/文档处理/pdf-to-image/index.html"
       }
     ]
   },
