@@ -7,7 +7,7 @@
   <meta name="description" content="纯前端合并多个 PDF 文件，支持拖拽排序、预览第一页。">
   <meta name="icon" content="📚">
   <script src="pdf.js"></script>
-  <script src="pdf-lib.js"></script>
+  <script src="../../../assets/js/pdf-lib.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -37,7 +37,7 @@
 
   <script>
     // 设置 PDF.js worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '../../../assets/js/pdf.worker.min.js';
   </script>
   <script src="app.js"></script>
 </body>

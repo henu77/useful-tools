@@ -1,0 +1,139 @@
+:root {
+  --primary-color: #4a90e2;
+  --bg-color: #f0f2f5;
+  --card-bg: #ffffff;
+  --danger-color: #ff4d4f;
+  --rotate-color: #faad14;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  margin: 0;
+  padding: 20px;
+  color: #333;
+  user-select: none; /* 防止拖拽时选中文字 */
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: var(--card-bg);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+h1 { text-align: center; margin-bottom: 30px; color: #2c3e50; }
+
+.controls {
+  display: flex; gap: 15px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap;
+  padding-bottom: 20px; border-bottom: 1px solid #eee;
+}
+
+.btn {
+  padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer;
+  font-size: 15px; font-weight: 500; transition: all 0.2s; color: white;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.btn:active { transform: translateY(0); }
+.btn-upload { background-color: var(--primary-color); position: relative; overflow: hidden; }
+.btn-upload input { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.btn-generate { background-color: #52c41a; }
+.btn-generate:disabled { background-color: #b7eb8f; cursor: wait; }
+.btn-clear { background-color: var(--danger-color); }
+
+/* --- 预览列表 --- */
+.preview-area {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 25px;
+  min-height: 250px;
+  border: 3px dashed #e8e8e8;
+  border-radius: 12px;
+  padding: 25px;
+  background-color: #fafafa;
+}
+
+/* --- 卡片样式 --- */
+.preview-item {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  position: relative;
+  aspect-ratio: 210/297; /* A4 比例 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: grab; /* 鼠标变为手型，提示可拖拽 */
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.preview-item:active {
+  cursor: grabbing; /* 按下时变为抓紧手型 */
+}
+
+/* 拖拽时的目标样式 */
+.preview-item.drag-over {
+  border: 2px dashed var(--primary-color);
+  transform: scale(1.02);
+  box-shadow: 0 0 10px rgba(74, 144, 226, 0.3);
+}
+
+/* 正在被拖拽的元素样式 */
+.preview-item.dragging {
+  opacity: 0.4;
+  border: 2px dashed #999;
+}
+
+.canvas-wrapper {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background-color: white;
+  pointer-events: none; /* 让鼠标事件穿透给父容器，便于拖拽 */
+}
+
+/* 只有图片本身恢复鼠标事件，用于点击预览，但不影响拖拽的大逻辑 */
+.preview-canvas {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+  pointer-events: auto;
+  cursor: zoom-in;
+}
+
+/* --- 工具按钮 --- */
+.page-number {
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.6); color: white; padding: 4px 10px;
+  border-radius: 20px; font-size: 12px; pointer-events: none; z-index: 2;
+}
+
+.tool-btn {
+  position: absolute; top: 8px; width: 32px; height: 32px;
+  border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: all 0.2s; z-index: 10;
+}
+.tool-btn:hover { transform: scale(1.1); }
+.delete-btn { right: 8px; background: var(--danger-color); }
+.rotate-btn { right: 48px; background: var(--rotate-color); }
+
+#status { text-align: center; margin-top: 15px; color: #888; font-size: 14px; }
+
+/* --- 模态框 --- */
+.modal {
+  display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+  width: 100%; height: 100%; background-color: rgba(0,0,0,0.9);
+  align-items: center; justify-content: center;
+}
+.modal.active { display: flex; }
+.modal-content { max-width: 90%; max-height: 90vh; object-fit: contain; }
+.modal-close {
+  position: absolute; top: 30px; right: 40px; color: #f1f1f1;
+  font-size: 50px; cursor: pointer;
+}
