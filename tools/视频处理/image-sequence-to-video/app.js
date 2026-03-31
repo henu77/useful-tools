@@ -1,5 +1,12 @@
+import {
+  Muxer,
+  ArrayBufferTarget
+} from "https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/+esm";
+
 const IMAGE_DURATION_MS = 500;
 const FPS = 30;
+const FRAME_DURATION_US = Math.round(1_000_000 / FPS);
+const FRAMES_PER_IMAGE = Math.max(1, Math.round((IMAGE_DURATION_MS / 1000) * FPS));
 
 const imageInput = document.getElementById("imageInput");
 const dropzone = document.getElementById("dropzone");
@@ -187,6 +194,11 @@ async function generateVideo() {
     return;
   }
 
+  if (!window.VideoEncoder || !window.VideoFrame) {
+    setError("当前浏览器不支持 MP4 编码，请使用较新的 Chrome、Edge 或其他支持 WebCodecs 的浏览器。");
+    return;
+  }
+
   setError("");
   toggleBusy(true);
   setProgress(2, "正在读取图片...");
@@ -207,45 +219,68 @@ async function generateVideo() {
       throw new Error("当前浏览器不支持 Canvas 2D。");
     }
 
-    const stream = canvas.captureStream(FPS);
-    const mimeType = pickSupportedMimeType();
-    if (!mimeType) {
-      throw new Error("当前浏览器不支持 MediaRecorder 视频导出。");
-    }
-
-    const recorder = new MediaRecorder(stream, {
-      mimeType,
-      videoBitsPerSecond: 6_000_000
-    });
-
-    const chunks = [];
-    recorder.addEventListener("dataavailable", event => {
-      if (event.data && event.data.size > 0) {
-        chunks.push(event.data);
+    const muxer = new Muxer({
+      target: new ArrayBufferTarget(),
+      fastStart: "in-memory",
+      video: {
+        codec: "avc",
+        width: canvas.width,
+        height: canvas.height,
+        frameRate: FPS
       }
     });
 
-    const stopped = new Promise(resolve => {
-      recorder.addEventListener("stop", resolve, { once: true });
+    const encoder = new VideoEncoder({
+      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+      error: error => {
+        throw error;
+      }
     });
 
-    recorder.start();
+    const codec = await pickSupportedCodec();
+    if (!codec) {
+      throw new Error("当前浏览器不支持 H.264 MP4 编码。");
+    }
+
+    encoder.configure({
+      codec,
+      width: canvas.width,
+      height: canvas.height,
+      bitrate: 6_000_000,
+      framerate: FPS,
+      avc: { format: "avc" }
+    });
+
+    let frameIndex = 0;
+    const totalFrames = loadedImages.length * FRAMES_PER_IMAGE;
 
     for (let i = 0; i < loadedImages.length; i += 1) {
       drawFrame(ctx, canvas.width, canvas.height, loadedImages[i].image);
-      setProgress(
-        10 + Math.round(((i + 1) / loadedImages.length) * 75),
-        `正在写入第 ${i + 1}/${loadedImages.length} 张图片...`
-      );
-      await wait(IMAGE_DURATION_MS);
+
+      for (let repeat = 0; repeat < FRAMES_PER_IMAGE; repeat += 1) {
+        const frame = new VideoFrame(canvas, {
+          timestamp: frameIndex * FRAME_DURATION_US,
+          duration: FRAME_DURATION_US
+        });
+
+        encoder.encode(frame, { keyFrame: frameIndex % FPS === 0 });
+        frame.close();
+        frameIndex += 1;
+
+        setProgress(
+          10 + Math.round((frameIndex / totalFrames) * 78),
+          `正在编码第 ${i + 1}/${loadedImages.length} 张图片...`
+        );
+      }
     }
 
-    recorder.stop();
-    await stopped;
+    await encoder.flush();
+    encoder.close();
+    muxer.finalize();
 
-    outputBlob = new Blob(chunks, { type: mimeType });
+    outputBlob = new Blob([muxer.target.buffer], { type: "video/mp4" });
     updateVideoPreview(outputBlob);
-    setProgress(100, "视频生成完成");
+    setProgress(100, "MP4 生成完成");
     downloadBtn.classList.remove("hidden");
   } catch (error) {
     setError(error.message || "生成失败，请稍后重试。");
@@ -283,14 +318,33 @@ function drawFrame(ctx, width, height, image) {
   ctx.drawImage(image, x, y, drawWidth, drawHeight);
 }
 
-function pickSupportedMimeType() {
+async function pickSupportedCodec() {
   const candidates = [
-    "video/webm;codecs=vp9",
-    "video/webm;codecs=vp8",
-    "video/webm"
+    "avc1.640028",
+    "avc1.4d4028",
+    "avc1.42E01E"
   ];
 
-  return candidates.find(type => MediaRecorder.isTypeSupported(type)) || "";
+  for (const codec of candidates) {
+    try {
+      const support = await VideoEncoder.isConfigSupported({
+        codec,
+        width: 1280,
+        height: 720,
+        bitrate: 6_000_000,
+        framerate: FPS,
+        avc: { format: "avc" }
+      });
+
+      if (support.supported) {
+        return codec;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  return "";
 }
 
 function updateVideoPreview(blob) {
@@ -312,7 +366,7 @@ function downloadVideo() {
 
   const link = document.createElement("a");
   link.href = outputUrl;
-  link.download = `image-sequence-${Date.now()}.webm`;
+  link.download = `image-sequence-${Date.now()}.mp4`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -353,10 +407,6 @@ function setProgress(percent, label) {
 
 function setError(message) {
   errorText.textContent = message;
-}
-
-function wait(ms) {
-  return new Promise(resolve => window.setTimeout(resolve, ms));
 }
 
 function formatFileSize(bytes) {
