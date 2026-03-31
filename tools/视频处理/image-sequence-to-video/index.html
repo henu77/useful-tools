@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>图片合成视频工具</title>
+    <meta
+      name="description"
+      content="上传多张图片并按顺序合成为视频，每张图片固定展示 0.5 秒，支持预览、排序与下载。"
+    />
+    <meta name="icon" content="🎥" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <div class="hero-card">
+        <div class="hero-copy">
+          <p class="eyebrow">Image Sequence to Video</p>
+          <h1>图片按顺序拼成短视频</h1>
+          <p class="hero-desc">
+            一次上传多张图片，前端本地合成视频。每张图片固定显示 0.5 秒，可拖拽排序后导出。
+          </p>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-card">
+            <span class="stat-label">单张时长</span>
+            <strong>0.5s</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">输出格式</span>
+            <strong>WebM</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <section class="panel uploader-panel">
+          <div class="panel-head">
+            <div>
+              <h2>上传图片</h2>
+              <p>支持多选、拖放和拖拽卡片排序。</p>
+            </div>
+            <label class="upload-btn" for="imageInput">选择图片</label>
+          </div>
+
+          <label class="dropzone" id="dropzone" for="imageInput">
+            <input type="file" id="imageInput" accept="image/*" multiple />
+            <span class="dropzone-icon">🖼️</span>
+            <strong>拖放图片到这里</strong>
+            <span>或点击选择多张图片</span>
+          </label>
+
+          <div class="toolbar">
+            <div class="status-wrap">
+              <span class="status-tag" id="imageCount">0 张图片</span>
+              <span class="status-text" id="timelineHint">预计视频时长 0.0 秒</span>
+            </div>
+            <button type="button" class="ghost-btn" id="clearBtn">清空列表</button>
+          </div>
+
+          <div class="preview-grid empty" id="previewGrid">
+            <div class="empty-state" id="emptyState">
+              <span class="empty-icon">🎞️</span>
+              <p>上传后会在这里展示图片序列</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel output-panel">
+          <div class="panel-head">
+            <div>
+              <h2>生成视频</h2>
+              <p>视频尺寸会自动适配为所有图片中的最大宽高。</p>
+            </div>
+          </div>
+
+          <div class="summary-list">
+            <div class="summary-item">
+              <span>画面填充</span>
+              <strong>等比完整显示</strong>
+            </div>
+            <div class="summary-item">
+              <span>背景</span>
+              <strong>深色纯底</strong>
+            </div>
+            <div class="summary-item">
+              <span>帧率</span>
+              <strong>30 FPS</strong>
+            </div>
+          </div>
+
+          <button type="button" class="primary-btn" id="generateBtn">生成视频</button>
+          <button type="button" class="secondary-btn hidden" id="downloadBtn">下载视频</button>
+
+          <div class="progress-block hidden" id="progressBlock">
+            <div class="progress-meta">
+              <span id="progressLabel">准备中...</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar">
+              <span id="progressValue"></span>
+            </div>
+          </div>
+
+          <div class="video-frame">
+            <video id="videoPreview" controls playsinline></video>
+            <div class="video-placeholder" id="videoPlaceholder">
+              <span>生成完成后可在这里预览视频</span>
+            </div>
+          </div>
+
+          <p class="tip-text">
+            为了兼容浏览器，导出格式为 WebM。整个过程只在本地浏览器中完成，不上传服务器。
+          </p>
+          <p class="error-text" id="errorText"></p>
+        </section>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
