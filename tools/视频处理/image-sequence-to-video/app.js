@@ -9,6 +9,7 @@ const FRAME_DURATION_US = Math.round(1_000_000 / FPS);
 const FRAMES_PER_IMAGE = Math.max(1, Math.round((IMAGE_DURATION_MS / 1000) * FPS));
 const MIN_BITRATE = 20_000_000;
 const MAX_BITRATE = 80_000_000;
+const MAX_CODED_AREA = 2_097_152;
 
 const imageInput = document.getElementById("imageInput");
 const dropzone = document.getElementById("dropzone");
@@ -212,12 +213,11 @@ async function generateVideo() {
 
     const width = Math.max(...loadedImages.map(item => item.image.naturalWidth || item.image.width));
     const height = Math.max(...loadedImages.map(item => item.image.naturalHeight || item.image.height));
-    const safeWidth = toEvenSize(width);
-    const safeHeight = toEvenSize(height);
+    const outputSize = getOutputSize(width, height);
 
     const canvas = document.createElement("canvas");
-    canvas.width = safeWidth;
-    canvas.height = safeHeight;
+    canvas.width = outputSize.width;
+    canvas.height = outputSize.height;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       throw new Error("当前浏览器不支持 Canvas 2D。");
@@ -241,12 +241,18 @@ async function generateVideo() {
       }
     });
 
-    const codec = await pickSupportedCodec();
+    const bitrate = getHighQualityBitrate(canvas.width, canvas.height);
+    const codec = await pickSupportedCodec(canvas.width, canvas.height, bitrate);
     if (!codec) {
-      throw new Error("当前浏览器不支持 H.264 MP4 编码。");
+      throw new Error("当前浏览器不支持当前分辨率的 H.264 MP4 编码，请尝试更小的图片尺寸。" );
     }
 
-    const bitrate = getHighQualityBitrate(canvas.width, canvas.height);
+    if (outputSize.scaled) {
+      setProgress(
+        8,
+        `图片过大，已自动缩放输出为 ${canvas.width}×${canvas.height} 以适配 H.264 编码`
+      );
+    }
 
     encoder.configure({
       codec,
@@ -326,8 +332,11 @@ function drawFrame(ctx, width, height, image) {
   ctx.drawImage(image, x, y, drawWidth, drawHeight);
 }
 
-async function pickSupportedCodec() {
+async function pickSupportedCodec(width, height, bitrate) {
   const candidates = [
+    "avc1.640034",
+    "avc1.640033",
+    "avc1.640032",
     "avc1.640028",
     "avc1.4d4028",
     "avc1.42E01E"
@@ -337,9 +346,9 @@ async function pickSupportedCodec() {
     try {
       const support = await VideoEncoder.isConfigSupported({
         codec,
-        width: 1280,
-        height: 720,
-        bitrate: MIN_BITRATE,
+        width,
+        height,
+        bitrate,
         framerate: FPS,
         avc: { format: "avc" }
       });
@@ -353,6 +362,29 @@ async function pickSupportedCodec() {
   }
 
   return "";
+}
+
+function getOutputSize(width, height) {
+  const safeWidth = toEvenSize(width);
+  const safeHeight = toEvenSize(height);
+
+  if (safeWidth * safeHeight <= MAX_CODED_AREA) {
+    return {
+      width: safeWidth,
+      height: safeHeight,
+      scaled: false
+    };
+  }
+
+  const scale = Math.sqrt(MAX_CODED_AREA / (safeWidth * safeHeight));
+  const scaledWidth = toEvenSize(Math.max(2, Math.floor(safeWidth * scale)));
+  const scaledHeight = toEvenSize(Math.max(2, Math.floor(safeHeight * scale)));
+
+  return {
+    width: scaledWidth,
+    height: scaledHeight,
+    scaled: true
+  };
 }
 
 function getHighQualityBitrate(width, height) {
