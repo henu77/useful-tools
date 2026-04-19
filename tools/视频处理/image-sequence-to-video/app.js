@@ -7,6 +7,8 @@ const IMAGE_DURATION_MS = 500;
 const FPS = 30;
 const FRAME_DURATION_US = Math.round(1_000_000 / FPS);
 const FRAMES_PER_IMAGE = Math.max(1, Math.round((IMAGE_DURATION_MS / 1000) * FPS));
+const MIN_BITRATE = 20_000_000;
+const MAX_BITRATE = 80_000_000;
 
 const imageInput = document.getElementById("imageInput");
 const dropzone = document.getElementById("dropzone");
@@ -210,10 +212,12 @@ async function generateVideo() {
 
     const width = Math.max(...loadedImages.map(item => item.image.naturalWidth || item.image.width));
     const height = Math.max(...loadedImages.map(item => item.image.naturalHeight || item.image.height));
+    const safeWidth = toEvenSize(width);
+    const safeHeight = toEvenSize(height);
 
     const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = safeWidth;
+    canvas.height = safeHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       throw new Error("当前浏览器不支持 Canvas 2D。");
@@ -242,14 +246,18 @@ async function generateVideo() {
       throw new Error("当前浏览器不支持 H.264 MP4 编码。");
     }
 
+    const bitrate = getHighQualityBitrate(canvas.width, canvas.height);
+
     encoder.configure({
       codec,
       width: canvas.width,
       height: canvas.height,
-      bitrate: 6_000_000,
+      bitrate,
       framerate: FPS,
       avc: { format: "avc" }
     });
+
+    setProgress(10, `开始高画质编码，目标码率 ${formatBitrate(bitrate)}`);
 
     let frameIndex = 0;
     const totalFrames = loadedImages.length * FRAMES_PER_IMAGE;
@@ -269,7 +277,7 @@ async function generateVideo() {
 
         setProgress(
           10 + Math.round((frameIndex / totalFrames) * 78),
-          `正在编码第 ${i + 1}/${loadedImages.length} 张图片...`
+          `正在高画质编码第 ${i + 1}/${loadedImages.length} 张图片...`
         );
       }
     }
@@ -331,7 +339,7 @@ async function pickSupportedCodec() {
         codec,
         width: 1280,
         height: 720,
-        bitrate: 6_000_000,
+        bitrate: MIN_BITRATE,
         framerate: FPS,
         avc: { format: "avc" }
       });
@@ -345,6 +353,25 @@ async function pickSupportedCodec() {
   }
 
   return "";
+}
+
+function getHighQualityBitrate(width, height) {
+  const pixelsPerFrame = width * height;
+  const bitsPerPixel = 0.22;
+  const estimated = Math.round(pixelsPerFrame * FPS * bitsPerPixel);
+  return clamp(estimated, MIN_BITRATE, MAX_BITRATE);
+}
+
+function formatBitrate(bitrate) {
+  return `${(bitrate / 1_000_000).toFixed(1)} Mbps`;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function toEvenSize(value) {
+  return value % 2 === 0 ? value : value + 1;
 }
 
 function updateVideoPreview(blob) {
