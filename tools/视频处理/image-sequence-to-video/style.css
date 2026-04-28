@@ -347,6 +347,41 @@ h1 {
   cursor: pointer;
 }
 
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.field-group {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: rgba(255, 250, 243, 0.9);
+}
+
+.field-label {
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  font-weight: 700;
+}
+
+.field-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(87, 65, 46, 0.22);
+  border-radius: 12px;
+  background: #fffdf8;
+  color: var(--text);
+}
+
+.field-help {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .summary-list {
   display: grid;
   gap: 12px;
@@ -469,9 +504,14 @@ h1 {
   }
 
   .panel-head,
-  .toolbar {
+  .toolbar,
+  .config-grid {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .config-grid {
+    grid-template-columns: 1fr;
   }
 
   .upload-btn,

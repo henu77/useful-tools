@@ -3,10 +3,12 @@ import {
   ArrayBufferTarget
 } from "https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/+esm";
 
-const IMAGE_DURATION_MS = 500;
-const FPS = 30;
-const FRAME_DURATION_US = Math.round(1_000_000 / FPS);
-const FRAMES_PER_IMAGE = Math.max(1, Math.round((IMAGE_DURATION_MS / 1000) * FPS));
+const DEFAULT_IMAGE_DURATION_SECONDS = 0.5;
+const DEFAULT_FPS = 30;
+const MIN_IMAGE_DURATION_SECONDS = 0.1;
+const MAX_IMAGE_DURATION_SECONDS = 10;
+const MIN_FPS = 1;
+const MAX_FPS = 60;
 const MIN_BITRATE = 20_000_000;
 const MAX_BITRATE = 80_000_000;
 const MAX_CODED_AREA = 2_097_152;
@@ -27,6 +29,11 @@ const progressValue = document.getElementById("progressValue");
 const videoPreview = document.getElementById("videoPreview");
 const videoPlaceholder = document.getElementById("videoPlaceholder");
 const errorText = document.getElementById("errorText");
+const fpsInput = document.getElementById("fpsInput");
+const durationInput = document.getElementById("durationInput");
+const fpsSummary = document.getElementById("fpsSummary");
+const durationSummary = document.getElementById("durationSummary");
+const durationStat = document.getElementById("durationStat");
 
 let frames = [];
 let dragId = null;
@@ -41,6 +48,10 @@ imageInput.addEventListener("change", event => {
 clearBtn.addEventListener("click", clearAll);
 generateBtn.addEventListener("click", generateVideo);
 downloadBtn.addEventListener("click", downloadVideo);
+fpsInput.addEventListener("input", handleConfigChange);
+durationInput.addEventListener("input", handleConfigChange);
+fpsInput.addEventListener("blur", normalizeConfigInputs);
+durationInput.addEventListener("blur", normalizeConfigInputs);
 
 ["dragenter", "dragover"].forEach(eventName => {
   dropzone.addEventListener(eventName, event => {
@@ -83,6 +94,7 @@ function addFiles(fileList) {
 }
 
 function renderList() {
+  const settings = getVideoSettings();
   previewGrid.innerHTML = "";
 
   if (!frames.length) {
@@ -91,15 +103,18 @@ function renderList() {
   } else {
     previewGrid.classList.remove("empty");
     frames.forEach((item, index) => {
-      previewGrid.appendChild(createCard(item, index));
+      previewGrid.appendChild(createCard(item, index, settings));
     });
   }
 
   imageCount.textContent = `${frames.length} 张图片`;
-  timelineHint.textContent = `预计视频时长 ${(frames.length * IMAGE_DURATION_MS / 1000).toFixed(1)} 秒`;
+  timelineHint.textContent = `预计视频时长 ${formatSeconds(frames.length * settings.imageDurationSeconds)} 秒`;
+  fpsSummary.textContent = `${settings.fps} FPS`;
+  durationSummary.textContent = `${formatSeconds(settings.imageDurationSeconds)} 秒`;
+  durationStat.textContent = `${formatSeconds(settings.imageDurationSeconds)}s`;
 }
 
-function createCard(item, index) {
+function createCard(item, index, settings) {
   const card = document.createElement("article");
   card.className = "preview-card";
   card.draggable = true;
@@ -111,7 +126,7 @@ function createCard(item, index) {
       <img src="${item.url}" alt="${escapeHtml(item.name)}" />
     </div>
     <div class="card-body">
-      <p class="card-index">第 ${index + 1} 张 · 0.5 秒</p>
+      <p class="card-index">第 ${index + 1} 张 · ${formatSeconds(settings.imageDurationSeconds)} 秒</p>
       <p class="card-meta">${escapeHtml(item.name)}</p>
       <p class="card-meta">${formatFileSize(item.size)}</p>
     </div>
@@ -191,6 +206,70 @@ function clearAll() {
   setError("");
 }
 
+function handleConfigChange() {
+  updateConfigInputs(false);
+  resetOutput();
+  renderList();
+}
+
+function normalizeConfigInputs() {
+  updateConfigInputs(true);
+  resetOutput();
+  renderList();
+}
+
+function updateConfigInputs(forceNormalize) {
+  const fps = clampNumber(
+    Number.parseInt(fpsInput.value, 10) || DEFAULT_FPS,
+    MIN_FPS,
+    MAX_FPS
+  );
+  const duration = clampNumber(
+    Number.parseFloat(durationInput.value) || DEFAULT_IMAGE_DURATION_SECONDS,
+    MIN_IMAGE_DURATION_SECONDS,
+    MAX_IMAGE_DURATION_SECONDS
+  );
+
+  if (forceNormalize || isValidNumberInput(fpsInput.value, MIN_FPS, MAX_FPS, true)) {
+    fpsInput.value = String(Math.round(fps));
+  }
+
+  if (forceNormalize || isValidNumberInput(durationInput.value, MIN_IMAGE_DURATION_SECONDS, MAX_IMAGE_DURATION_SECONDS, false)) {
+    durationInput.value = formatSeconds(duration);
+  }
+}
+
+function isValidNumberInput(value, min, max, integerOnly) {
+  if (!value.trim()) {
+    return false;
+  }
+
+  const parsed = integerOnly ? Number.parseInt(value, 10) : Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed >= min && parsed <= max;
+}
+
+function getVideoSettings() {
+  const fps = clampNumber(
+    Number.parseInt(fpsInput.value, 10) || DEFAULT_FPS,
+    MIN_FPS,
+    MAX_FPS
+  );
+  const imageDurationSeconds = clampNumber(
+    Number.parseFloat(durationInput.value) || DEFAULT_IMAGE_DURATION_SECONDS,
+    MIN_IMAGE_DURATION_SECONDS,
+    MAX_IMAGE_DURATION_SECONDS
+  );
+  const imageDurationUs = Math.round(imageDurationSeconds * 1_000_000);
+  const framesPerImage = Math.max(1, Math.round(imageDurationSeconds * fps));
+
+  return {
+    fps,
+    imageDurationSeconds,
+    imageDurationUs,
+    framesPerImage
+  };
+}
+
 async function generateVideo() {
   if (!frames.length) {
     setError("请先上传至少一张图片。");
@@ -201,6 +280,8 @@ async function generateVideo() {
     setError("当前浏览器不支持 MP4 编码，请使用较新的 Chrome、Edge 或其他支持 WebCodecs 的浏览器。");
     return;
   }
+
+  const settings = getVideoSettings();
 
   setError("");
   toggleBusy(true);
@@ -230,7 +311,7 @@ async function generateVideo() {
         codec: "avc",
         width: canvas.width,
         height: canvas.height,
-        frameRate: FPS
+        frameRate: settings.fps
       }
     });
 
@@ -241,10 +322,10 @@ async function generateVideo() {
       }
     });
 
-    const bitrate = getHighQualityBitrate(canvas.width, canvas.height);
-    const codec = await pickSupportedCodec(canvas.width, canvas.height, bitrate);
+    const bitrate = getHighQualityBitrate(canvas.width, canvas.height, settings.fps);
+    const codec = await pickSupportedCodec(canvas.width, canvas.height, bitrate, settings.fps);
     if (!codec) {
-      throw new Error("当前浏览器不支持当前分辨率的 H.264 MP4 编码，请尝试更小的图片尺寸。" );
+      throw new Error("当前浏览器不支持当前分辨率的 H.264 MP4 编码，请尝试更小的图片尺寸。");
     }
 
     if (outputSize.scaled) {
@@ -259,26 +340,33 @@ async function generateVideo() {
       width: canvas.width,
       height: canvas.height,
       bitrate,
-      framerate: FPS,
+      framerate: settings.fps,
       avc: { format: "avc" }
     });
 
-    setProgress(10, `开始高画质编码，目标码率 ${formatBitrate(bitrate)}`);
+    setProgress(
+      10,
+      `开始高画质编码，目标码率 ${formatBitrate(bitrate)}，${settings.fps} FPS / ${formatSeconds(settings.imageDurationSeconds)} 秒每张`
+    );
 
     let frameIndex = 0;
-    const totalFrames = loadedImages.length * FRAMES_PER_IMAGE;
+    let timestampUs = 0;
+    const totalFrames = loadedImages.length * settings.framesPerImage;
 
     for (let i = 0; i < loadedImages.length; i += 1) {
       drawFrame(ctx, canvas.width, canvas.height, loadedImages[i].image);
+      const frameDurations = splitDuration(settings.imageDurationUs, settings.framesPerImage);
 
-      for (let repeat = 0; repeat < FRAMES_PER_IMAGE; repeat += 1) {
+      for (let repeat = 0; repeat < settings.framesPerImage; repeat += 1) {
+        const frameDurationUs = frameDurations[repeat];
         const frame = new VideoFrame(canvas, {
-          timestamp: frameIndex * FRAME_DURATION_US,
-          duration: FRAME_DURATION_US
+          timestamp: timestampUs,
+          duration: frameDurationUs
         });
 
-        encoder.encode(frame, { keyFrame: frameIndex % FPS === 0 });
+        encoder.encode(frame, { keyFrame: frameIndex % settings.fps === 0 });
         frame.close();
+        timestampUs += frameDurationUs;
         frameIndex += 1;
 
         setProgress(
@@ -302,6 +390,13 @@ async function generateVideo() {
   } finally {
     toggleBusy(false);
   }
+}
+
+function splitDuration(totalDurationUs, parts) {
+  const baseDuration = Math.floor(totalDurationUs / parts);
+  const remainder = totalDurationUs % parts;
+
+  return Array.from({ length: parts }, (_, index) => baseDuration + (index < remainder ? 1 : 0));
 }
 
 function loadImage(url, index, total) {
@@ -332,7 +427,7 @@ function drawFrame(ctx, width, height, image) {
   ctx.drawImage(image, x, y, drawWidth, drawHeight);
 }
 
-async function pickSupportedCodec(width, height, bitrate) {
+async function pickSupportedCodec(width, height, bitrate, fps) {
   const candidates = [
     "avc1.640034",
     "avc1.640033",
@@ -349,7 +444,7 @@ async function pickSupportedCodec(width, height, bitrate) {
         width,
         height,
         bitrate,
-        framerate: FPS,
+        framerate: fps,
         avc: { format: "avc" }
       });
 
@@ -387,18 +482,18 @@ function getOutputSize(width, height) {
   };
 }
 
-function getHighQualityBitrate(width, height) {
+function getHighQualityBitrate(width, height, fps) {
   const pixelsPerFrame = width * height;
   const bitsPerPixel = 0.22;
-  const estimated = Math.round(pixelsPerFrame * FPS * bitsPerPixel);
-  return clamp(estimated, MIN_BITRATE, MAX_BITRATE);
+  const estimated = Math.round(pixelsPerFrame * fps * bitsPerPixel);
+  return clampNumber(estimated, MIN_BITRATE, MAX_BITRATE);
 }
 
 function formatBitrate(bitrate) {
   return `${(bitrate / 1_000_000).toFixed(1)} Mbps`;
 }
 
-function clamp(value, min, max) {
+function clampNumber(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
@@ -454,6 +549,8 @@ function toggleBusy(isBusy) {
   generateBtn.disabled = isBusy;
   clearBtn.disabled = isBusy;
   imageInput.disabled = isBusy;
+  fpsInput.disabled = isBusy;
+  durationInput.disabled = isBusy;
   dropzone.style.pointerEvents = isBusy ? "none" : "auto";
 }
 
@@ -474,6 +571,14 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function formatSeconds(value) {
+  return trimTrailingZeros(value.toFixed(value < 1 ? 2 : 1));
+}
+
+function trimTrailingZeros(value) {
+  return value.replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
+}
+
 function escapeHtml(text) {
   return String(text)
     .replace(/&/g, "&amp;")
@@ -482,4 +587,5 @@ function escapeHtml(text) {
     .replace(/\"/g, "&quot;");
 }
 
+updateConfigInputs(true);
 renderList();
