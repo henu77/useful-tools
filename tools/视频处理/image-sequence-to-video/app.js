@@ -5,7 +5,7 @@ import {
 
 const DEFAULT_IMAGE_DURATION_SECONDS = 0.5;
 const DEFAULT_FPS = 30;
-const MIN_IMAGE_DURATION_SECONDS = 0.1;
+const MIN_IMAGE_DURATION_SECONDS = 0.001;
 const MAX_IMAGE_DURATION_SECONDS = 10;
 const MIN_FPS = 1;
 const MAX_FPS = 60;
@@ -572,7 +572,15 @@ function formatFileSize(bytes) {
 }
 
 function formatSeconds(value) {
-  return trimTrailingZeros(value.toFixed(value < 1 ? 2 : 1));
+  if (value < 0.1) {
+    return trimTrailingZeros(value.toFixed(3));
+  }
+
+  if (value < 1) {
+    return trimTrailingZeros(value.toFixed(2));
+  }
+
+  return trimTrailingZeros(value.toFixed(1));
 }
 
 function trimTrailingZeros(value) {
